@@ -21,6 +21,10 @@ let package = Package(
             targets: ["HomeKitADK"]
         ),
         .executable(
+            name: "AccessorySetupGenerator",
+            targets: ["AccessorySetupGenerator"]
+        ),
+        .executable(
             name: "homekitadk-lightbulb",
             targets: ["HomeKitADKLightbulb"]
         )
@@ -65,6 +69,16 @@ let package = Package(
             ],
             cSettings: [
                 .define("BLE"),
+                .unsafeFlags(["-L", "/opt/homebrew/Cellar/openssl@3/3.0.8/lib", "-l", "crypto"])
+            ]
+        ),
+        .executableTarget(
+            name: "AccessorySetupGenerator",
+            dependencies: [
+                "CHomeKitADK",
+                "COpenSSL",
+            ],
+            cSettings: [
                 .unsafeFlags(["-L", "/opt/homebrew/Cellar/openssl@3/3.0.8/lib", "-l", "crypto"])
             ]
         ),
