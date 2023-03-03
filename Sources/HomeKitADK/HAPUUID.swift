@@ -13,7 +13,7 @@ public extension HAPUUID {
     
     init(appleDefined: UInt32) {
         let bytes = appleDefined.littleEndian.bytes
-        self.init(bytes: (0x91, 0x52, 0x76, 0xBB, 0x26, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, bytes.3, bytes.2, bytes.1, bytes.0))
+        self.init(bytes: (0x91, 0x52, 0x76, 0xBB, 0x26, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, bytes.0, bytes.1, bytes.2, bytes.3))
     }
     
     var isAppleDefined: Bool {
@@ -58,7 +58,7 @@ extension HAPUUID: CustomStringConvertible {
 public extension Foundation.UUID {
     
     init(homeKit uuid: HAPUUID) {
-        self.init(uuid: uuid.bytes)
+        self.init(bluetooth: .init(homeKit: uuid))
     }
 }
 
@@ -74,13 +74,13 @@ public extension HAPUUID {
 public extension BluetoothUUID {
     
     init(homeKit uuid: HAPUUID) {
-        self.init(littleEndian: .bit128(.init(homeKit: uuid)))
+        self = .bit128(.init(homeKit: uuid))
     }
 }
 
 public extension Bluetooth.UInt128 {
     
     init(homeKit uuid: HAPUUID) {
-        self.init(bytes: (uuid.bytes.15, uuid.bytes.14, uuid.bytes.13, uuid.bytes.12, uuid.bytes.11, uuid.bytes.10, uuid.bytes.9, uuid.bytes.8, uuid.bytes.7, uuid.bytes.6, uuid.bytes.5, uuid.bytes.4, uuid.bytes.3, uuid.bytes.2, uuid.bytes.1, uuid.bytes.0))
+        self.init(littleEndian: .init(bytes: uuid.bytes))
     }
 }

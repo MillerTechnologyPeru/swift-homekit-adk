@@ -19,8 +19,22 @@ final class UUIDTests: XCTestCase {
     }
     
     func testAppleDefined() {
-        XCTAssertEqual(UUID(homeKit: HAPUUID(appleDefined: 0x0000)).uuidString, "00000000-0000-1000-8000-0026BB765291")
-        XCTAssertEqual(UUID(homeKit: HAPUUID(appleDefined: 0x0001)).uuidString, "00000001-0000-1000-8000-0026BB765291")
+        
+        let uuids: [(UInt32, String)] = [
+            (0x00000000, "00000000-0000-1000-8000-0026BB765291"),
+            (0x00000001, "00000001-0000-1000-8000-0026BB765291"),
+            (0x00000002, "00000002-0000-1000-8000-0026BB765291"),
+            (0x00000003, "00000003-0000-1000-8000-0026BB765291"),
+            (0xFFFFFFFF, "FFFFFFFF-0000-1000-8000-0026BB765291")
+        ]
+        
+        for (value, uuidString) in uuids {
+            let uuid = HAPUUID(appleDefined: value)
+            XCTAssert(uuid.isAppleDefined)
+            XCTAssertEqual(UUID(homeKit: uuid), UUID(uuidString: uuidString))
+            //XCTAssertEqual(uuid.description, value.toHexadecimal())
+            XCTAssertEqual(UUID(homeKit: HAPUUID(appleDefined: value)).uuidString, uuidString)
+        }
     }
     
     func testCustom() {
