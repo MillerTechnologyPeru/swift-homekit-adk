@@ -3,8 +3,5 @@ import XCTest
 
 final class HomeKitADKTests: XCTestCase {
      
-    func testExample() throws {
-        
-        //XCTAssertEqual(HomeKitADK().text, "Hello, World!")
-    }
+    
 }
