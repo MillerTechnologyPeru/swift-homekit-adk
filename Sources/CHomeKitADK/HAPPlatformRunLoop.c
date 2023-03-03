@@ -5,8 +5,8 @@
 // See [CONTRIBUTORS.md] for the list of HomeKit ADK project authors.
 
 #include "HAPPlatformRunLoop+Init.h"
-
-#import <Foundation/Foundation.h>
+#import <CoreFoundation/CoreFoundation.h>
+#import <Dispatch/Dispatch.h>
 
 void HAPPlatformRunLoopCreate(const HAPPlatformRunLoopOptions* options) {
     HAPPrecondition(options);

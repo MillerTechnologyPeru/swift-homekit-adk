@@ -19,6 +19,10 @@ extern "C" {
 #define HAVE_DISPLAY 0
 #endif
 
+#ifndef HAVE_NFC
+#define HAVE_NFC 0
+#endif
+
 #ifndef HAVE_MFI_HW_AUTH
 #define HAVE_MFI_HW_AUTH 0
 #endif
@@ -31,6 +35,18 @@ extern "C" {
 #if __has_feature(nullability)
 #pragma clang assume_nonnull begin
 #endif
+
+/**
+ * Deallocate memory pointed to by ptr.
+ *
+ * @param      ptr                  Pointer to memory to be deallocated.
+ */
+#define HAPPlatformFreeSafe(ptr) \
+    do { \
+        HAPAssert(ptr); \
+        free(ptr); \
+        ptr = NULL; \
+    } while (0)
 
 #if __has_feature(nullability)
 #pragma clang assume_nonnull end
