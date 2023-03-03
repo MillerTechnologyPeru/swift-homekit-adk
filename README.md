@@ -1,2 +1,3 @@
-# swift-homekit-adk
-Apple's HomeKit ADK Swift package
+# HomeKitADK
+
+A description of this package.
