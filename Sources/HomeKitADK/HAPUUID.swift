@@ -65,7 +65,7 @@ public extension Foundation.UUID {
 public extension HAPUUID {
     
     init(uuid: Foundation.UUID) {
-        self.init(bytes: uuid.uuid)
+        self.init(UInt128(uuid: uuid))
     }
 }
 
@@ -78,9 +78,23 @@ public extension BluetoothUUID {
     }
 }
 
+public extension HAPUUID {
+    
+    init(bluetooth uuid: BluetoothUUID) {
+        self.init(UInt128(uuid))
+    }
+}
+
 public extension Bluetooth.UInt128 {
     
     init(homeKit uuid: HAPUUID) {
         self.init(littleEndian: .init(bytes: uuid.bytes))
+    }
+}
+
+public extension HAPUUID {
+    
+    init(_ value: UInt128) {
+        self.init(bytes: value.littleEndian.bytes)
     }
 }
