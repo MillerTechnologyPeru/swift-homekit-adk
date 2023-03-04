@@ -43,5 +43,8 @@ final class UUIDTests: XCTestCase {
         XCTAssertFalse(uuid.isAppleDefined)
         //XCTAssertEqual(uuid.description, string)
         XCTAssertEqual(BluetoothUUID(homeKit: uuid).description, string)
+        
+        XCTAssertFalse(HAPUUID(uuid: UUID()).isAppleDefined)
+        XCTAssertFalse(HAPUUID(uuid: UUID(uuidString: "7D99A285-5F8D-4349-841E-4FC8E4DA3C3A")!).isAppleDefined)
     }
 }
