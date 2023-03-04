@@ -8,7 +8,14 @@
 
 import PackageDescription
 
-let openSSLPath = "/opt/homebrew/Cellar/openssl@3/3.0.8"
+let macOSConditionals: [CSetting] = [
+    .unsafeFlags([
+        "-L", "/opt/homebrew/Cellar/openssl@3/3.0.8/lib", "-l", "crypto"
+    ], .when(platforms: [.macOS])),
+    .unsafeFlags([
+        "-I", "/opt/homebrew/Cellar/openssl@3/3.0.8/include"
+    ], .when(platforms: [.macOS]))
+]
 
 let package = Package(
     name: "swift-homekit-adk",
@@ -25,8 +32,12 @@ let package = Package(
             targets: ["AccessorySetupGenerator"]
         ),
         .executable(
-            name: "homekitadk-lightbulb",
+            name: "homekit-adk-lightbulb",
             targets: ["HomeKitADKLightbulb"]
+        ),
+        .executable(
+            name: "homekit-adk-lock",
+            targets: ["HomeKitADKLock"]
         )
     ],
     dependencies: [
@@ -48,10 +59,8 @@ let package = Package(
             name: "CHomeKitADK",
             cSettings: [
                 .define("SWIFTHOMEKIT"),
-                .unsafeFlags([
-                    "-I", "/opt/homebrew/Cellar/openssl@3/3.0.8/include",
-                ], .when(platforms: [.macOS])),
-            ]
+                .define("HAP_LOG_LEVEL", to: "3", .when(configuration: .debug)),
+            ] + macOSConditionals
         ),
         .systemLibrary(
             name: "COpenSSL",
@@ -68,9 +77,18 @@ let package = Package(
                 "COpenSSL",
             ],
             cSettings: [
-                .define("BLE"),
-                .unsafeFlags(["-L", "/opt/homebrew/Cellar/openssl@3/3.0.8/lib", "-l", "crypto"])
-            ]
+                .define("IP")
+            ] + macOSConditionals
+        ),
+        .executableTarget(
+            name: "HomeKitADKLock",
+            dependencies: [
+                "CHomeKitADK",
+                "COpenSSL",
+            ],
+            cSettings: [
+                .define("BLE")
+            ] + macOSConditionals
         ),
         .executableTarget(
             name: "AccessorySetupGenerator",
