@@ -8,14 +8,13 @@
 
 import PackageDescription
 
-let macOSConditionals: [CSetting] = [
-    .unsafeFlags([
-        "-L", "/opt/homebrew/Cellar/openssl@3/3.0.8/lib", "-l", "crypto"
-    ], .when(platforms: [.macOS])),
-    .unsafeFlags([
-        "-I", "/opt/homebrew/Cellar/openssl@3/3.0.8/include"
-    ], .when(platforms: [.macOS]))
-]
+let macOSLinkFlags: CSetting = .unsafeFlags([
+    "-L", "/opt/homebrew/Cellar/openssl@3/3.0.8/lib", "-l", "crypto"
+], .when(platforms: [.macOS]))
+
+let macOSIncludeFlags: CSetting = .unsafeFlags([
+    "-I", "/opt/homebrew/Cellar/openssl@3/3.0.8/include"
+], .when(platforms: [.macOS]))
 
 var package = Package(
     name: "swift-homekit-adk",
@@ -61,7 +60,8 @@ var package = Package(
             cSettings: [
                 .define("SWIFTHOMEKIT"),
                 .define("HAP_LOG_LEVEL", to: "3", .when(configuration: .debug)),
-            ] + macOSConditionals
+                macOSIncludeFlags
+            ]
         ),
         .systemLibrary(
             name: "COpenSSL",
@@ -78,8 +78,10 @@ var package = Package(
                 "COpenSSL",
             ],
             cSettings: [
-                .define("IP")
-            ] + macOSConditionals
+                .define("IP"),
+                macOSLinkFlags,
+                macOSIncludeFlags
+            ]
         ),
         .executableTarget(
             name: "HomeKitADKLock",
@@ -88,8 +90,10 @@ var package = Package(
                 "COpenSSL",
             ],
             cSettings: [
-                .define("BLE")
-            ] + macOSConditionals
+                .define("BLE"),
+                macOSLinkFlags,
+                macOSIncludeFlags
+            ]
         ),
         .executableTarget(
             name: "AccessorySetupGenerator",
@@ -98,7 +102,7 @@ var package = Package(
                 "COpenSSL",
             ],
             cSettings: [
-                .unsafeFlags(["-L", "/opt/homebrew/Cellar/openssl@3/3.0.8/lib", "-l", "crypto"])
+                macOSLinkFlags
             ]
         ),
         .testTarget(
