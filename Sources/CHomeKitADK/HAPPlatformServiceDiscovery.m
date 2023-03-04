@@ -6,7 +6,8 @@
 
 #include "HAPPlatformServiceDiscovery+Init.h"
 
-#if __APPLE__
+#if LEGACY && __APPLE__
+
 #import <Foundation/Foundation.h>
 
 static const HAPLogObject sd_log = { .subsystem = kHAPPlatform_LogSubsystem, .category = "ServiceDiscovery" };

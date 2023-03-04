@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // See [CONTRIBUTORS.md] for the list of HomeKit ADK project authors.
 
-#if __linux__
+#if LEGACY && __linux__
 
 #include <arpa/inet.h>
 #include <unistd.h>
