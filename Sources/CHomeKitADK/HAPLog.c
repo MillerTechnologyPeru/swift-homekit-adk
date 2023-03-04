@@ -168,3 +168,9 @@ void HAPLogFaultInternal(const HAPLogObject* _Nullable log, const char* format, 
     Capture(log, /* bufferBytes: */ NULL, /* numBufferBytes: */ 0, kHAPLogType_Fault, format, args);
     va_end(args);
 }
+
+void HAPLogMessage(HAPLogObject log, const char* message) {
+    if (HAP_LOG_LEVEL >= 1) {
+        HAPLogInternal(&log, "%s", message);
+    }
+}

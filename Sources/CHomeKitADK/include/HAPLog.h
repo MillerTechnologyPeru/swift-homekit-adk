@@ -585,7 +585,7 @@ HAP_DISALLOW_USE(HAPLogBufferFaultInternal)
 
 HAP_PRINTFLIKE(2, 3)
 void HAPLogInternal(const HAPLogObject* _Nullable log, const char* format, ...);
-HAP_DISALLOW_USE(HAPLogInternal)
+//HAP_DISALLOW_USE(HAPLogInternal)
 
 HAP_PRINTFLIKE(2, 3)
 void HAPLogInfoInternal(const HAPLogObject* _Nullable log, const char* format, ...);
@@ -603,6 +603,9 @@ HAP_PRINTFLIKE(2, 3)
 void HAPLogFaultInternal(const HAPLogObject* _Nullable log, const char* format, ...);
 HAP_DISALLOW_USE(HAPLogFaultInternal)
 /**@endcond */
+
+/// Intended for use in Rust or Swift
+void HAPLogMessage(HAPLogObject log, const char* message);
 
 #if __has_feature(nullability)
 #pragma clang assume_nonnull end
