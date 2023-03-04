@@ -15,13 +15,14 @@ extern "C" {
 #include <net/if.h>
 
 #include "HAPPlatform.h"
+#include "HAPPlatformFileHandle.h"
 
 #if __has_feature(nullability)
 #pragma clang assume_nonnull begin
 #endif
 
 /**@file
- * Bonjour service discovery for Darwin based on NSNetService.
+ * Bonjour service discovery for POSIX based on Apple's mDNSResponder.
  *
  * **Example**
 
@@ -62,7 +63,12 @@ typedef struct {
 struct HAPPlatformServiceDiscovery {
     // Opaque type. Do not access the instance fields directly.
     /**@cond */
-    char _;
+    char interfaceName[IFNAMSIZ];
+
+    DNSServiceRef dnsService;
+    TXTRecordRef txtRecord;
+    char txtRecordBuffer[kHAPPlatformServiceDiscovery_MaxTXTRecordBufferBytes];
+    HAPPlatformFileHandleRef fileHandle;
     /**@endcond */
 };
 

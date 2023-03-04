@@ -17,6 +17,8 @@ extern "C" {
 #pragma clang assume_nonnull begin
 #endif
 
+#if __APPLE__
+
 /**
  * BLE peripheral manager initialization options.
  */
@@ -47,6 +49,90 @@ struct HAPPlatformBLEPeripheralManager {
 void HAPPlatformBLEPeripheralManagerCreate(
         HAPPlatformBLEPeripheralManagerRef blePeripheralManager,
         const HAPPlatformBLEPeripheralManagerOptions* options);
+
+
+#else
+
+typedef struct {
+    HAPPlatformBLEPeripheralManagerUUID type;
+    bool isPrimary;
+    HAPPlatformBLEPeripheralManagerAttributeHandle handle;
+} HAPPlatformBLEPeripheralManagerService;
+
+typedef struct {
+    HAPPlatformBLEPeripheralManagerUUID type;
+    HAPPlatformBLEPeripheralManagerCharacteristicProperties properties;
+    HAPPlatformBLEPeripheralManagerAttributeHandle handle;
+    HAPPlatformBLEPeripheralManagerAttributeHandle valueHandle;
+    HAPPlatformBLEPeripheralManagerAttributeHandle cccDescriptorHandle;
+} HAPPlatformBLEPeripheralManagerCharacteristic;
+
+typedef struct {
+    HAPPlatformBLEPeripheralManagerUUID type;
+    HAPPlatformBLEPeripheralManagerDescriptorProperties properties;
+    HAPPlatformBLEPeripheralManagerAttributeHandle handle;
+} HAPPlatformBLEPeripheralManagerDescriptor;
+
+HAP_ENUM_BEGIN(uint8_t, HAPPlatformBLEPeripheralManagerAttributeType) {
+    kHAPPlatformBLEPeripheralManagerAttributeType_None,
+    kHAPPlatformBLEPeripheralManagerAttributeType_Service,
+    kHAPPlatformBLEPeripheralManagerAttributeType_Characteristic,
+    kHAPPlatformBLEPeripheralManagerAttributeType_Descriptor
+} HAP_ENUM_END(uint8_t, HAPPlatformBLEPeripheralManagerAttributeType);
+
+typedef struct {
+    HAPPlatformBLEPeripheralManagerAttributeType type;
+    union {
+        HAPPlatformBLEPeripheralManagerDescriptor descriptor;
+        HAPPlatformBLEPeripheralManagerCharacteristic characteristic;
+        HAPPlatformBLEPeripheralManagerService service;
+    } _;
+} HAPPlatformBLEPeripheralManagerAttribute;
+
+/**
+ * BLE peripheral manager initialization options.
+ */
+typedef struct {
+    HAPPlatformBLEPeripheralManagerAttribute* attributes;
+    size_t numAttributes;
+} HAPPlatformBLEPeripheralManagerOptions;
+
+/**
+ * BLE peripheral manager.
+ */
+struct HAPPlatformBLEPeripheralManager {
+    // Opaque type. Do not access the instance fields directly.
+    /**@cond */
+    HAPPlatformBLEPeripheralManagerAttribute* attributes;
+    size_t numAttributes;
+
+    HAPPlatformBLEPeripheralManagerDelegate delegate;
+    HAPPlatformBLEPeripheralManagerDeviceAddress deviceAddress;
+    char deviceName[64 + 1];
+
+    uint8_t advertisingBytes[31];
+    uint8_t numAdvertisingBytes;
+    uint8_t scanResponseBytes[31];
+    uint8_t numScanResponseBytes;
+    HAPBLEAdvertisingInterval advertisingInterval;
+
+    bool isDeviceAddressSet : 1;
+    bool didPublishAttributes : 1;
+    bool isConnected : 1;
+    /**@endcond */
+};
+
+/**
+ * Initializes the BLE peripheral manager.
+ *
+ * @param[out] blePeripheralManager Pointer to an allocated but uninitialized HAPPlatformBLEPeripheralManager structure.
+ * @param      options              Initialization options.
+ */
+void HAPPlatformBLEPeripheralManagerCreate(
+        HAPPlatformBLEPeripheralManagerRef blePeripheralManager,
+        const HAPPlatformBLEPeripheralManagerOptions* options);
+
+#endif
 
 #if __has_feature(nullability)
 #pragma clang assume_nonnull end

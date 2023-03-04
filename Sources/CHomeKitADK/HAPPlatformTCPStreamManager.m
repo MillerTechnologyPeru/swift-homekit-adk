@@ -4,6 +4,7 @@
 // you may not use this file except in compliance with the License.
 // See [CONTRIBUTORS.md] for the list of HomeKit ADK project authors.
 
+#if __APPLE__
 #import <Foundation/Foundation.h>
 #import <Network/Network.h>
 
@@ -305,3 +306,4 @@ HAPError HAPPlatformTCPStreamWrite(
 
     return kHAPError_None;
 }
+#endif

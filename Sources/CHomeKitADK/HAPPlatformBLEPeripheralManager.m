@@ -6,6 +6,8 @@
 
 #include "HAPPlatformBLEPeripheralManager+Init.h"
 
+#if __APPLE__
+
 #import <CoreBluetooth/CoreBluetooth.h>
 
 static const HAPLogObject logObject = { .subsystem = kHAPPlatform_LogSubsystem, .category = "BLEPeripheralManager" };
@@ -686,3 +688,4 @@ HAPError HAPPlatformBLEPeripheralManagerSendHandleValueIndication(
 
     return kHAPError_None;
 }
+#endif
