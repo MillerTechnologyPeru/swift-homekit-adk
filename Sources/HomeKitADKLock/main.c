@@ -105,10 +105,8 @@ static void InitializePlatform() {
 
 #if (BLE)
     // BLE peripheral manager. Depends on key-value store.
-    static HAPPlatformBLEPeripheralManagerOptions blePMOptions = { 0 };
-    #if  __APPLE__
-    blePMOptions.keyValueStore = &platform.keyValueStore;
-    #endif
+    static HAPPlatformBLEPeripheralManagerOptions blePMOptions = { };
+    //blePMOptions.keyValueStore = &platform.keyValueStore;
 
     static HAPPlatformBLEPeripheralManager blePeripheralManager;
     HAPPlatformBLEPeripheralManagerCreate(&blePeripheralManager, &blePMOptions);

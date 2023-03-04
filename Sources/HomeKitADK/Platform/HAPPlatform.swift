@@ -24,11 +24,7 @@ internal struct HAPPlatform {
         
     static var netService: NetService?
     
-    #if os(Linux)
-    static var hostController: BluetoothLinux.HostController?
-    #endif
-    
-    static var peripheralManager: HAPPeripheral?
+    static var gattController: HAPGATTController?
 }
 
 #if os(Linux)
