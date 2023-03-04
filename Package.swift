@@ -16,7 +16,46 @@ let macOSIncludeFlags: CSetting = .unsafeFlags([
     "-I", "/opt/homebrew/Cellar/openssl@3/3.0.8/include"
 ], .when(platforms: [.macOS]))
 
-var package = Package(
+let platformDependencies: [Target.Dependency] = [
+    .product(
+        name: "Bluetooth",
+        package: "Bluetooth"
+    ),
+    .product(
+        name: "BluetoothGATT",
+        package: "Bluetooth"
+    ),
+    .product(
+        name: "BluetoothHCI",
+        package: "Bluetooth",
+        condition: .when(platforms: [.macOS, .linux])
+    ),
+    .product(
+        name: "BluetoothGAP",
+        package: "Bluetooth"
+    ),
+    .product(
+        name: "GATT",
+        package: "GATT"
+    ),
+    .product(
+        name: "DarwinGATT",
+        package: "GATT",
+        condition: .when(platforms: [.macOS])
+    ),
+    .product(
+        name: "BluetoothLinux",
+        package: "BluetoothLinux",
+        condition: .when(platforms: [.linux])
+    ),
+    .product(
+        name: "NetService",
+        package: "NetService",
+        condition: .when(platforms: [.linux])
+    ),
+]
+
+let package = Package(
     name: "swift-homekit-adk",
     platforms: [
         .macOS(.v11)
@@ -44,6 +83,18 @@ var package = Package(
             url: "https://github.com/PureSwift/Bluetooth.git",
             .upToNextMajor(from: "6.0.0")
         ),
+        .package(
+            url: "https://github.com/PureSwift/GATT.git",
+            branch: "master"
+        ),
+        .package(
+            url: "https://github.com/PureSwift/BluetoothLinux.git",
+            branch: "master"
+        ),
+        .package(
+            url: "https://github.com/Bouke/NetService.git",
+            from: "0.8.1"
+        ),
     ],
     targets: [
         .target(
@@ -51,14 +102,13 @@ var package = Package(
             dependencies: [
                 "CHomeKitADK",
                 "COpenSSL",
-                "Cdns_sd",
-                "Bluetooth"
-            ]
+            ] + platformDependencies
         ),
         .target(
             name: "CHomeKitADK",
             cSettings: [
                 .define("SWIFTHOMEKIT"),
+                .define("HAP_LOG_LEVEL", to: "1", .when(configuration: .release)),
                 .define("HAP_LOG_LEVEL", to: "3", .when(configuration: .debug)),
                 macOSIncludeFlags
             ]
@@ -111,15 +161,3 @@ var package = Package(
         ),
     ]
 )
-
-#if !os(Linux)
-    package.targets.append(
-        .systemLibrary(name: "Cdns_sd"))
-#else
-    package.targets.append(
-        .systemLibrary(name: "Cdns_sd",
-                       pkgConfig: "avahi-compat-libdns_sd",
-                       providers: [
-                           .apt(["libavahi-compat-libdnssd-dev"])
-                       ]))
-#endif

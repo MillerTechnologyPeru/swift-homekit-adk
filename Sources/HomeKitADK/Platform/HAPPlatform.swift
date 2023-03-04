@@ -7,8 +7,8 @@
 
 import Foundation
 import CoreFoundation
-#if canImport(Netlink)
-import Netlink
+#if canImport(NetService)
+import NetService
 #endif
 
 /// Platform singletons

@@ -9,8 +9,8 @@ import Foundation
 import CoreFoundation
 import Dispatch
 import CHomeKitADK
-#if canImport(Netlink)
-import Netlink
+#if canImport(NetService)
+import NetService
 #endif
 
 fileprivate func HAPPlatformServiceDiscoveryLog(_ message: String) {
