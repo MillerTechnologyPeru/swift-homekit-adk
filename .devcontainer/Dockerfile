@@ -27,4 +27,12 @@ RUN bash /tmp/library-scripts/node-debian.sh "${NVM_DIR}" "${NODE_VERSION}" "${U
     && rm -rf /var/lib/apt/lists/* /tmp/library-scripts
 
 # Install additional OS packages you may want.
-
+RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
+    && apt-get -y install --no-install-recommends \
+    libavahi-compat-libdnssd-dev \
+    libssl-dev \
+    make \
+    openssh-server \
+    perl \
+    unzip \
+    wget
