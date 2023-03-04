@@ -50,6 +50,7 @@ public final class HAPGATTController {
         self.lastTask = Task(priority: .userInitiated) {
             try await lastTask?.value
             guard let controller = HAPPlatform.gattController else {
+                log("\(self) not initialized")
                 fatalError("\(self) not initialized")
             }
             do {
@@ -212,7 +213,7 @@ public func HAPPlatformBLEPeripheralManagerRemoveAllServices(
     log("\(#function)")
     HAPGATTController.task { controller in
         controller.pendingServices.removeAll()
-        controller.peripheral.removeAllServices()
+        await controller.peripheral.removeAllServices()
     }
 }
 
@@ -288,6 +289,13 @@ public func HAPPlatformBLEPeripheralManagerStartAdvertising(
     }
     #elseif os(Linux)
     HAPGATTController.task {
+        let hostController = $0.peripheral.hostController
+        let advertisingData = Data(bytes: advertisingBytes, count: numAdvertisingBytes)
+        try await hostController.setLowEnergyAdvertisingData(.init(data: advertisingData)!)
+        if let pointer = scanResponseBytes, numScanResponseBytes > 0 {
+            let data =  Data(bytes: pointer, count: numScanResponseBytes)
+            try await hostController.setLowEnergyScanResponse(.init(data: data)!)
+        }
         try await $0.peripheral.start()
     }
     #endif
