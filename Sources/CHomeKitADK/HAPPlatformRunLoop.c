@@ -5,6 +5,9 @@
 // See [CONTRIBUTORS.md] for the list of HomeKit ADK project authors.
 
 #include "HAPPlatformRunLoop+Init.h"
+
+#if __APPLE__ && LEGACY
+
 #import <CoreFoundation/CoreFoundation.h>
 #import <Dispatch/Dispatch.h>
 
@@ -28,9 +31,11 @@ HAPError HAPPlatformRunLoopScheduleCallback(
     dispatch_async(dispatch_get_main_queue(), ^{
         callback(context, contextSize);
     });
-    return kHAPError_None;
+    return s;
 }
 
 void HAPPlatformRunLoopStop(void) {
     CFRunLoopStop(CFRunLoopGetCurrent());
 }
+
+#endif

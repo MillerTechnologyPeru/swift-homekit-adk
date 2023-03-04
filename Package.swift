@@ -17,7 +17,7 @@ let macOSConditionals: [CSetting] = [
     ], .when(platforms: [.macOS]))
 ]
 
-let package = Package(
+var package = Package(
     name: "swift-homekit-adk",
     platforms: [
         .macOS(.v11)
@@ -52,6 +52,7 @@ let package = Package(
             dependencies: [
                 "CHomeKitADK",
                 "COpenSSL",
+                "Cdns_sd",
                 "Bluetooth"
             ]
         ),
@@ -73,7 +74,7 @@ let package = Package(
         .executableTarget(
             name: "HomeKitADKLightbulb",
             dependencies: [
-                "CHomeKitADK",
+                "HomeKitADK",
                 "COpenSSL",
             ],
             cSettings: [
@@ -83,7 +84,7 @@ let package = Package(
         .executableTarget(
             name: "HomeKitADKLock",
             dependencies: [
-                "CHomeKitADK",
+                "HomeKitADK",
                 "COpenSSL",
             ],
             cSettings: [
@@ -93,7 +94,7 @@ let package = Package(
         .executableTarget(
             name: "AccessorySetupGenerator",
             dependencies: [
-                "CHomeKitADK",
+                "HomeKitADK",
                 "COpenSSL",
             ],
             cSettings: [
@@ -106,3 +107,15 @@ let package = Package(
         ),
     ]
 )
+
+#if !os(Linux)
+    package.targets.append(
+        .systemLibrary(name: "Cdns_sd"))
+#else
+    package.targets.append(
+        .systemLibrary(name: "Cdns_sd",
+                       pkgConfig: "avahi-compat-libdns_sd",
+                       providers: [
+                           .apt(["libavahi-compat-libdnssd-dev"])
+                       ]))
+#endif
