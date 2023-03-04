@@ -6,7 +6,7 @@
 
 #include "HAPPlatformBLEPeripheralManager+Init.h"
 
-#if __linux__
+#if LEGACY && __linux__
 
 static const HAPLogObject logObject = { .subsystem = kHAPPlatform_LogSubsystem, .category = "BLEPeripheralManager" };
 

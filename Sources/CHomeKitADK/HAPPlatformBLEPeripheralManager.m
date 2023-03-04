@@ -6,7 +6,7 @@
 
 #include "HAPPlatformBLEPeripheralManager+Init.h"
 
-#if __APPLE__
+#if LEGACY && __APPLE__
 
 #import <CoreBluetooth/CoreBluetooth.h>
 
