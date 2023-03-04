@@ -32,7 +32,7 @@ jobs:
       with:
         version: 5.7.3
     - name: Install Dependencies
-      run: sudo apt update && sudo apt install libssl-dev -y
+      run: sudo apt update && sudo apt install libssl-dev libavahi-compat-libdnssd-dev -y
     - name: Checkout
       uses: actions/checkout@v2
     - name: Swift Version
