@@ -102,7 +102,7 @@ var package = Package(
                 "COpenSSL",
             ],
             cSettings: [
-                macOSLinkFlags
+                macOSIncludeFlags
             ]
         ),
         .testTarget(
