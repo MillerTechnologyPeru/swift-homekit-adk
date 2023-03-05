@@ -45,6 +45,8 @@ public actor HAPGATTController {
     fileprivate static var lastTask: Task<Void, Error>?
     
     fileprivate static var services = [GATTAttribute.Service]()
+    
+    fileprivate static var address: BluetoothAddress?
         
     // MARK: - Initialization
     
@@ -87,24 +89,12 @@ public actor HAPGATTController {
         self.delegate = delegate
     }
     
-    func addService(uuid: PendingService.UUID, isPrimary: Bool) {
-        
-    }
-    
-    func addCharacteristic(
-        uuid: PendingCharacteristic.UUID,
-        properties: PendingCharacteristic.Properties,
-        value: Data?
-    ) {
-        
-    }
-    
     private func willRead(_ request: GATTReadRequest<HAPPeripheral.Central>) async -> ATTError? {
         
         return nil
     }
     
-    private func willWrite(_ request: GATTWriteRequest<HAPPeripheral.Central>)async -> ATTError? {
+    private func willWrite(_ request: GATTWriteRequest<HAPPeripheral.Central>) async -> ATTError? {
         
         return nil
     }
@@ -154,38 +144,6 @@ extension HAPPlatform {
     }
 }
 
-internal extension HAPGATTController {
-    
-    struct PendingProfile {
-        
-        var services: [PendingService]
-    }
-    
-    struct PendingService {
-        
-        typealias UUID = HAPPlatformBLEPeripheralManagerUUID
-        
-        let uuid: UUID
-        
-        let isPrimary: Bool
-        
-        var characteristics: [PendingCharacteristic]
-    }
-    
-    struct PendingCharacteristic {
-        
-        typealias UUID = HAPPlatformBLEPeripheralManagerUUID
-        
-        typealias Properties = HAPPlatformBLEPeripheralManagerCharacteristicProperties
-        
-        let uuid: UUID
-        
-        let properties: Properties
-        
-        let value: Data?
-    }
-}
-
 /**
  Create Bluetooth LE Peripheral Manager
  
@@ -220,7 +178,9 @@ public func HAPPlatformBLEPeripheralManagerSetDeviceAddress(
     blePeripheralManager: HAPPlatformBLEPeripheralManagerRef,
     deviceAddress: inout HAPPlatformBLEPeripheralManagerDeviceAddress
 ) {
-    log("Set Device Address \(deviceAddress.description)")
+    let address = BluetoothAddress(homeKit: deviceAddress)
+    log("Set Device Address \(address)")
+    HAPGATTController.address = address
 }
 
 @_silgen_name("HAPPlatformBLEPeripheralManagerSetDeviceName")
@@ -415,7 +375,7 @@ public func HAPPlatformBLEPeripheralManagerStartAdvertising(
     options = GATTPeripheralAdvertisingOptions(
         advertisingData: LowEnergyAdvertisingData(data: advertisingData),
         scanResponse: scanResponse.flatMap { .init(data: $0) },
-        randomAddress: nil
+        randomAddress: HAPGATTController.address
     )
     #endif
     HAPGATTController.task {
