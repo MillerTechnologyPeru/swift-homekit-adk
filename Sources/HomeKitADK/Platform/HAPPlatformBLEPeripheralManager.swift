@@ -354,10 +354,16 @@ public func HAPPlatformBLEPeripheralManagerPublishServices(
     let pendingServices = HAPGATTController.services
     HAPGATTController.services.removeAll()
     HAPGATTController.task {
-        $0.peripheral.stop()
+        let isAdvertising = await $0.peripheral.isAdvertising
+        if isAdvertising {
+            $0.peripheral.stop()
+        }
         await $0.peripheral.removeAllServices()
         for service in pendingServices {
             _ = try await $0.peripheral.add(service: service)
+        }
+        if isAdvertising {
+            try await $0.peripheral.start()
         }
     }
 }
@@ -371,6 +377,7 @@ public func HAPPlatformBLEPeripheralManagerSendHandleValueIndication(
     numBytes: Int
 ) -> CHomeKitADK.HAPError {
     log("Send Handle Value Indication for connection \(connectionHandle.toHexadecimal())")
+    // TODO: Indications
     return kHAPError_None
 }
 
@@ -385,6 +392,7 @@ public func HAPPlatformBLEPeripheralManagerStartAdvertising(
 ) {
     log("Start Advertising with \(AdvertisingInterval(rawValue: advertisingInterval)?.description ?? advertisingInterval.description) interval")
     
+    let options: HAPPeripheral.AdvertisingOptions
     #if canImport(CoreBluetooth)
     // CoreBluetooth automatically prepends 3 bytes for Flags to our advertisement data
     // (It adds flag 0x06: LE General Discoverable Mode bit + BR/EDR Not Supported bit)
@@ -397,29 +405,27 @@ public func HAPPlatformBLEPeripheralManagerStartAdvertising(
     let numScanResponseBytes = numScanResponseBytes - 2;
     let advertisingData = Data(bytes: advertisingBytes, count: numAdvertisingBytes)
     let scanResponse = numScanResponseBytes > 0 ? Data(bytes: scanResponseBytes!, count: numScanResponseBytes) : Data()
-    let options: DarwinPeripheral.AdvertisingOptions = [
+    options = [
         "CBAdvertisementDataAppleMfgData": advertisingData as NSData,
         CBAdvertisementDataLocalNameKey: scanResponse as NSData
     ]
-    HAPGATTController.task {
-        $0.peripheral.stop()
-        try await $0.peripheral.start(options: options)
-    }
     #elseif os(Linux)
-    HAPGATTController.task {
-        $0.peripheral.stop()
-        let hostController = $0.peripheral.hostController
-        do { try await hostController.enableLowEnergyAdvertising(false) }
-        catch HCIError.commandDisallowed { }
-        let advertisingData = Data(bytes: advertisingBytes, count: numAdvertisingBytes)
-        try await hostController.setLowEnergyAdvertisingData(.init(data: advertisingData)!)
-        if let pointer = scanResponseBytes, numScanResponseBytes > 0 {
-            let data =  Data(bytes: pointer, count: numScanResponseBytes)
-            try await hostController.setLowEnergyScanResponse(.init(data: data)!)
-        }
-        try await $0.peripheral.start()
-    }
+    let advertisingData = Data(bytes: advertisingBytes, count: numAdvertisingBytes)
+    let scanResponse = scanResponseBytes.map { Data(bytes: pointer, count: numScanResponseBytes) }
+    options = GATTPeripheralAdvertisingOptions(
+        advertisingData: LowEnergyAdvertisingData(data: advertisingData),
+        scanResponse: scanResponse.map { .init(data: $0) },
+        randomAddress: nil
+    )
     #endif
+    HAPGATTController.task {
+        if await $0.peripheral.isAdvertising {
+            $0.peripheral.stop()
+        }
+        try await $0.peripheral.start(options: options)
+        let isAdvertising = await $0.peripheral.isAdvertising
+        assert(isAdvertising)
+    }
 }
 
 @_silgen_name("HAPPlatformBLEPeripheralManagerStopAdvertising")
