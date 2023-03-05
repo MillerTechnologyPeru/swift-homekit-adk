@@ -411,10 +411,10 @@ public func HAPPlatformBLEPeripheralManagerStartAdvertising(
     ]
     #elseif os(Linux)
     let advertisingData = Data(bytes: advertisingBytes, count: numAdvertisingBytes)
-    let scanResponse = scanResponseBytes.map { Data(bytes: pointer, count: numScanResponseBytes) }
+    let scanResponse = scanResponseBytes.map { Data(bytes: $0, count: numScanResponseBytes) }
     options = GATTPeripheralAdvertisingOptions(
         advertisingData: LowEnergyAdvertisingData(data: advertisingData),
-        scanResponse: scanResponse.map { .init(data: $0) },
+        scanResponse: scanResponse.flatMap { .init(data: $0) },
         randomAddress: nil
     )
     #endif
