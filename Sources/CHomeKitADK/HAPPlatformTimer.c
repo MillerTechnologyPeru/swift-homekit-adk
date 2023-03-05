@@ -4,6 +4,8 @@
 // you may not use this file except in compliance with the License.
 // See [CONTRIBUTORS.md] for the list of HomeKit ADK project authors.
 
+#if LEGACY && __linux__
+
 #include "HAPPlatform.h"
 #include "HAPPlatformTimer+Init.h"
 
@@ -166,3 +168,4 @@ void HAPPlatformTimerDeregister(HAPPlatformTimerRef timer) {
     HAPLogError(&logObject, "Timer not found: %lu.", (unsigned long) timer);
     HAPFatalError();
 }
+#endif
