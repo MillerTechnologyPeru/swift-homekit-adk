@@ -6,15 +6,17 @@
 
 #include "HAPPlatformBLEPeripheralManager+Init.h"
 
-#if LEGACY && __APPLE__
+#if __APPLE__
 
 #import <CoreBluetooth/CoreBluetooth.h>
-
-static const HAPLogObject logObject = { .subsystem = kHAPPlatform_LogSubsystem, .category = "BLEPeripheralManager" };
 
 extern NSString* const CBAdvertisementDataAppleMfgData;
 extern NSString* const CBManagerIsPrivilegedDaemonKey;
 extern NSString* const CBCentralManagerScanOptionAllowDuplicatesKey;
+
+#if LEGACY
+
+static const HAPLogObject logObject = { .subsystem = kHAPPlatform_LogSubsystem, .category = "BLEPeripheralManager" };
 
 static HAPPlatformBLEPeripheralManagerRef blePeripheralManager = NULL;
 static HAPPlatformBLEPeripheralManagerDelegate delegate;
@@ -688,4 +690,5 @@ HAPError HAPPlatformBLEPeripheralManagerSendHandleValueIndication(
 
     return kHAPError_None;
 }
+#endif
 #endif

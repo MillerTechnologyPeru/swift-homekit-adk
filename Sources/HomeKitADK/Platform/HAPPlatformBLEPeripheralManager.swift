@@ -20,6 +20,7 @@ import IOBluetooth
 import Foundation
 import CoreFoundation
 import Bluetooth
+import BluetoothGATT
 import GATT
 import CHomeKitADK
 
@@ -33,17 +34,36 @@ private let log = HAPPlatformBLEPeripheralManagerLog
 private let log: (String) -> () = { _ in }
 #endif
 
-public final class HAPGATTController {
-        
+public actor HAPGATTController {
+            
     // MARK: - Properties
     
     let peripheral: HAPPeripheral
     
     fileprivate(set) var delegate: UnsafePointer<HAPPlatformBLEPeripheralManagerDelegate>?
     
-    static fileprivate var lastTask: Task<Void, Error>?
+    fileprivate static var lastTask: Task<Void, Error>?
     
-    var pendingServices = [(HAPPlatformBLEPeripheralManagerUUID, Bool)]()
+    fileprivate static var services = [GATTAttribute.Service]()
+        
+    // MARK: - Initialization
+    
+    public init(peripheral: HAPPeripheral) async throws {
+        self.peripheral = peripheral
+        
+        // set callbacks
+        self.peripheral.willRead = { [unowned self] in
+            return await self.willRead($0)
+        }
+        self.peripheral.willWrite = { [unowned self] in
+            return await self.willWrite($0)
+        }
+        self.peripheral.didWrite = { [unowned self] (confirmation) in
+            await self.didWrite(confirmation)
+        }
+    }
+    
+    // MARK: - Methods
     
     static func task(_ task: @escaping (HAPGATTController) async throws -> ()) {
         let lastTask = self.lastTask
@@ -63,24 +83,21 @@ public final class HAPGATTController {
         }
     }
     
-    // MARK: - Initialization
-    
-    public init(peripheral: HAPPeripheral) async throws {
-        self.peripheral = peripheral
-        
-        // set callbacks
-        self.peripheral.willRead = { [unowned self] in
-            return await self.willRead($0)
-        }
-        self.peripheral.willWrite = { [unowned self] in
-            return await self.willWrite($0)
-        }
-        self.peripheral.didWrite = { [unowned self] (confirmation) in
-            await self.didWrite(confirmation)
-        }
+    func setDelegate(_ delegate: UnsafePointer<HAPPlatformBLEPeripheralManagerDelegate>) {
+        self.delegate = delegate
     }
     
-    // MARK: - Methods
+    func addService(uuid: PendingService.UUID, isPrimary: Bool) {
+        
+    }
+    
+    func addCharacteristic(
+        uuid: PendingCharacteristic.UUID,
+        properties: PendingCharacteristic.Properties,
+        value: Data?
+    ) {
+        
+    }
     
     private func willRead(_ request: GATTReadRequest<HAPPeripheral.Central>) async -> ATTError? {
         
@@ -123,13 +140,49 @@ extension HAPPlatform {
             socket: BluetoothLinux.L2CAPSocket.self
         )
         #elseif canImport(Darwin)
-        let peripheral = DarwinPeripheral()
+        let options: DarwinPeripheral.Options = [
+            "CBManagerIsPrivilegedDaemonKey": true as NSNumber,
+            "CBCentralManagerScanOptionAllowDuplicatesKey": true as NSNumber
+        ]
+        let peripheral = DarwinPeripheral(options: options)
         #endif
         peripheral.log = HAPPlatformBLEPeripheralManagerLog
         #if canImport(Darwin)
         try await peripheral.waitPowerOn()
         #endif
         self.gattController = try await HAPGATTController(peripheral: peripheral)
+    }
+}
+
+internal extension HAPGATTController {
+    
+    struct PendingProfile {
+        
+        var services: [PendingService]
+    }
+    
+    struct PendingService {
+        
+        typealias UUID = HAPPlatformBLEPeripheralManagerUUID
+        
+        let uuid: UUID
+        
+        let isPrimary: Bool
+        
+        var characteristics: [PendingCharacteristic]
+    }
+    
+    struct PendingCharacteristic {
+        
+        typealias UUID = HAPPlatformBLEPeripheralManagerUUID
+        
+        typealias Properties = HAPPlatformBLEPeripheralManagerCharacteristicProperties
+        
+        let uuid: UUID
+        
+        let properties: Properties
+        
+        let value: Data?
     }
 }
 
@@ -157,7 +210,7 @@ public func HAPPlatformBLEPeripheralManagerSetDelegate(
 ) {
     log(#function)
     HAPGATTController.task { controller in
-        controller.delegate = delegate
+        await controller.setDelegate(delegate)
     }
 }
 
@@ -165,9 +218,9 @@ public func HAPPlatformBLEPeripheralManagerSetDelegate(
 @_silgen_name("HAPPlatformBLEPeripheralManagerSetDeviceAddress")
 public func HAPPlatformBLEPeripheralManagerSetDeviceAddress(
     blePeripheralManager: HAPPlatformBLEPeripheralManagerRef,
-    deviceAddress: UnsafePointer<HAPPlatformBLEPeripheralManagerDeviceAddress>
+    deviceAddress: inout HAPPlatformBLEPeripheralManagerDeviceAddress
 ) {
-    log("\(#function) \(deviceAddress.pointee.description)")
+    log("\(#function) \(deviceAddress.description)")
 }
 
 @_silgen_name("HAPPlatformBLEPeripheralManagerSetDeviceName")
@@ -176,7 +229,7 @@ public func HAPPlatformBLEPeripheralManagerSetDeviceName(
     deviceName: UnsafePointer<CChar>
 ) {
     let name = String(cString: deviceName)
-    log("\(#function) \(name)")
+    log("Set Device Name \"\(name)\"")
     HAPGATTController.task { controller in
         #if os(Linux)
         try await controller.peripheral.hostController.writeLocalName(name)
@@ -189,13 +242,17 @@ public func HAPPlatformBLEPeripheralManagerSetDeviceName(
 @_silgen_name("HAPPlatformBLEPeripheralManagerAddService")
 public func HAPPlatformBLEPeripheralManagerAddService(
     blePeripheralManager: HAPPlatformBLEPeripheralManagerRef,
-    type: UnsafePointer<HAPPlatformBLEPeripheralManagerUUID>,
+    type: inout HAPPlatformBLEPeripheralManagerUUID,
     isPrimary: Bool
 ) -> CHomeKitADK.HAPError {
-    log("\(#function) \(type.pointee.description) isPrimary \(isPrimary)")
-    HAPGATTController.task { controller in
-        controller.pendingServices.append((type.pointee, isPrimary))
-    }
+    log("Add\(isPrimary ? " primary" : "") service \(type.description)")
+    let service = GATTAttribute.Service(
+        uuid: BluetoothUUID(homeKit: type),
+        primary: isPrimary,
+        characteristics: [],
+        includedServices: []
+    )
+    HAPGATTController.services.append(service)
     return kHAPError_None
 }
 
@@ -210,9 +267,9 @@ public func HAPPlatformBLEPeripheralManagerAddService(
 public func HAPPlatformBLEPeripheralManagerRemoveAllServices(
     blePeripheralManager: HAPPlatformBLEPeripheralManagerRef
 ) {
-    log("\(#function)")
+    log("Remove All Services")
+    HAPGATTController.services.removeAll()
     HAPGATTController.task { controller in
-        controller.pendingServices.removeAll()
         await controller.peripheral.removeAllServices()
     }
 }
@@ -220,40 +277,87 @@ public func HAPPlatformBLEPeripheralManagerRemoveAllServices(
 @_silgen_name("HAPPlatformBLEPeripheralManagerAddCharacteristic")
 public func HAPPlatformBLEPeripheralManagerAddCharacteristic(
     blePeripheralManager: HAPPlatformBLEPeripheralManagerRef,
-    type: UnsafePointer<HAPPlatformBLEPeripheralManagerUUID>,
-    properties: HAPPlatformBLEPeripheralManagerCharacteristicProperties
+    type: inout HAPPlatformBLEPeripheralManagerUUID,
+    properties: HAPPlatformBLEPeripheralManagerCharacteristicProperties,
+    constBytes: UnsafeRawPointer?,
+    constNumBytes: Int,
+    valueHandle: inout HAPPlatformBLEPeripheralManagerAttributeHandle,
+    cccDescriptorHandle: UnsafeMutablePointer<HAPPlatformBLEPeripheralManagerAttributeHandle>?
 ) -> CHomeKitADK.HAPError {
-    log("\(#function)")
+    log("Add Characteristic \(type.description)")
+    let data = constBytes.map { Data(bytes: $0, count: constNumBytes) }
+    let characteristic = GATTAttribute.Characteristic(
+        uuid: BluetoothUUID(homeKit: type),
+        value: data ?? Data(),
+        permissions: .init(homeKit: properties),
+        properties: .init(homeKit: properties),
+        descriptors: []
+    )
+    var services = HAPGATTController.services
+    let lastServiceIndex = services.count - 1
+    services[lastServiceIndex].characteristics.append(characteristic)
+    valueHandle = GATTDatabase(services: services).last!.handle
+    if properties.notify || properties.indicate {
+        let descriptor = GATTClientCharacteristicConfiguration().descriptor
+        assert(cccDescriptorHandle != nil)
+        let lastCharacteristicIndex = services[lastServiceIndex].characteristics.count - 1
+        services[lastServiceIndex].characteristics[lastCharacteristicIndex].descriptors.append(descriptor)
+        cccDescriptorHandle?.pointee = GATTDatabase(services: services).last!.handle
+    }
+    HAPGATTController.services = services
     return kHAPError_None
 }
 
 @_silgen_name("HAPPlatformBLEPeripheralManagerAddDescriptor")
 public func HAPPlatformBLEPeripheralManagerAddDescriptor(
-    blePeripheralManager: HAPPlatformBLEPeripheralManagerRef
+    blePeripheralManager: HAPPlatformBLEPeripheralManagerRef,
+    type: inout HAPPlatformBLEPeripheralManagerUUID,
+    properties: HAPPlatformBLEPeripheralManagerCharacteristicProperties,
+    constBytes: UnsafeRawPointer?,
+    constNumBytes: Int,
+    descriptorHandle: inout HAPPlatformBLEPeripheralManagerAttributeHandle
 ) -> CHomeKitADK.HAPError {
-    log("\(#function)")
+    log("Add descriptor \(type.description)")
+    let data = constBytes.map { Data(bytes: $0, count: constNumBytes) }
+    let descriptor = GATTAttribute.Descriptor(
+        uuid: BluetoothUUID(homeKit: type),
+        value: data ?? Data(),
+        permissions: .init(homeKit: properties)
+    )
+    var services = HAPGATTController.services
+    let lastServiceIndex = services.count - 1
+    let lastCharacteristicIndex = services[lastServiceIndex].characteristics.count - 1
+    services[lastServiceIndex].characteristics[lastCharacteristicIndex].descriptors.append(descriptor)
+    descriptorHandle = GATTDatabase(services: services).last!.handle
+    HAPGATTController.services = services
     return kHAPError_None
 }
 
 @_silgen_name("HAPPlatformBLEPeripheralManagerCancelCentralConnection")
 public func HAPPlatformBLEPeripheralManagerCancelCentralConnection(
-    blePeripheralManager: HAPPlatformBLEPeripheralManagerRef
+    blePeripheralManager: HAPPlatformBLEPeripheralManagerRef,
+    connectionHandle: HAPPlatformBLEPeripheralManagerConnectionHandle
 ) {
-    log("\(#function)")
+    log("Cancel Connection \(connectionHandle.toHexadecimal())")
+    
 }
 
 @_silgen_name("HAPPlatformBLEPeripheralManagerPublishServices")
 public func HAPPlatformBLEPeripheralManagerPublishServices(
     blePeripheralManager: HAPPlatformBLEPeripheralManagerRef
 ) {
-    log("\(#function)")
+    log("Publish Services")
 }
 
 @_silgen_name("HAPPlatformBLEPeripheralManagerSendHandleValueIndication")
 public func HAPPlatformBLEPeripheralManagerSendHandleValueIndication(
-    blePeripheralManager: HAPPlatformBLEPeripheralManagerRef
+    blePeripheralManager: HAPPlatformBLEPeripheralManagerRef,
+    connectionHandle: HAPPlatformBLEPeripheralManagerConnectionHandle,
+    valueHandle: HAPPlatformBLEPeripheralManagerAttributeHandle,
+    bytes: UnsafeRawPointer?,
+    numBytes: Int
 ) -> CHomeKitADK.HAPError {
-    log("\(#function)")
+    log("Send Handle Value Indication for connection \(connectionHandle.toHexadecimal())")
     return kHAPError_None
 }
 
@@ -266,7 +370,15 @@ public func HAPPlatformBLEPeripheralManagerStartAdvertising(
     scanResponseBytes: UnsafeRawPointer?,
     numScanResponseBytes: Int
 ) {
-    log("\(#function) \(AdvertisingInterval(rawValue: advertisingInterval)?.description ?? advertisingInterval.description)")
+    log("Start Advertising with \(AdvertisingInterval(rawValue: advertisingInterval)?.description ?? advertisingInterval.description) interval")
+    
+    // add pending services
+    let pendingServices = HAPGATTController.services
+    HAPGATTController.task {
+        for service in pendingServices {
+            _ = try await $0.peripheral.add(service: service)
+        }
+    }
     
     #if canImport(CoreBluetooth)
     // CoreBluetooth automatically prepends 3 bytes for Flags to our advertisement data
@@ -281,7 +393,7 @@ public func HAPPlatformBLEPeripheralManagerStartAdvertising(
     let advertisingData = Data(bytes: advertisingBytes, count: numAdvertisingBytes)
     let scanResponse = numScanResponseBytes > 0 ? Data(bytes: scanResponseBytes!, count: numScanResponseBytes) : Data()
     let options: DarwinPeripheral.AdvertisingOptions = [
-        //CBAdvertisementDataAppleMfgData: advertisingData,
+        "CBAdvertisementDataAppleMfgData": advertisingData as NSData,
         CBAdvertisementDataLocalNameKey: scanResponse as NSData
     ]
     HAPGATTController.task {
@@ -290,6 +402,8 @@ public func HAPPlatformBLEPeripheralManagerStartAdvertising(
     #elseif os(Linux)
     HAPGATTController.task {
         let hostController = $0.peripheral.hostController
+        do { try await hostController.enableLowEnergyAdvertising(false) }
+        catch HCIError.commandDisallowed { }
         let advertisingData = Data(bytes: advertisingBytes, count: numAdvertisingBytes)
         try await hostController.setLowEnergyAdvertisingData(.init(data: advertisingData)!)
         if let pointer = scanResponseBytes, numScanResponseBytes > 0 {
@@ -305,7 +419,7 @@ public func HAPPlatformBLEPeripheralManagerStartAdvertising(
 public func HAPPlatformBLEPeripheralManagerStopAdvertising(
     blePeripheralManager: HAPPlatformBLEPeripheralManagerRef
 ) {
-    log("\(#function)")
+    log("Stop Advrertising")
     HAPGATTController.task {
         $0.peripheral.stop()
     }
