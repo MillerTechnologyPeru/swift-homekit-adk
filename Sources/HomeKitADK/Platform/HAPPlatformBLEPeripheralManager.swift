@@ -356,7 +356,7 @@ public func HAPPlatformBLEPeripheralManagerPublishServices(
     HAPGATTController.task {
         let isAdvertising = await $0.peripheral.isAdvertising
         if isAdvertising {
-            $0.peripheral.stop()
+            await $0.peripheral.stop()
         }
         await $0.peripheral.removeAllServices()
         for service in pendingServices {
@@ -420,7 +420,7 @@ public func HAPPlatformBLEPeripheralManagerStartAdvertising(
     #endif
     HAPGATTController.task {
         if await $0.peripheral.isAdvertising {
-            $0.peripheral.stop()
+            await $0.peripheral.stop()
         }
         try await $0.peripheral.start(options: options)
         let isAdvertising = await $0.peripheral.isAdvertising
@@ -434,6 +434,6 @@ public func HAPPlatformBLEPeripheralManagerStopAdvertising(
 ) {
     log("Stop Advertising")
     HAPGATTController.task {
-        $0.peripheral.stop()
+        await $0.peripheral.stop()
     }
 }
