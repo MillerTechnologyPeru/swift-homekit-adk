@@ -354,7 +354,8 @@ public func HAPPlatformBLEPeripheralManagerPublishServices(
     let pendingServices = HAPGATTController.services
     HAPGATTController.services.removeAll()
     HAPGATTController.task {
-        $0.peripheral.removeAllServices()
+        $0.peripheral.stop()
+        await $0.peripheral.removeAllServices()
         for service in pendingServices {
             _ = try await $0.peripheral.add(service: service)
         }
@@ -401,10 +402,12 @@ public func HAPPlatformBLEPeripheralManagerStartAdvertising(
         CBAdvertisementDataLocalNameKey: scanResponse as NSData
     ]
     HAPGATTController.task {
+        $0.peripheral.stop()
         try await $0.peripheral.start(options: options)
     }
     #elseif os(Linux)
     HAPGATTController.task {
+        $0.peripheral.stop()
         let hostController = $0.peripheral.hostController
         do { try await hostController.enableLowEnergyAdvertising(false) }
         catch HCIError.commandDisallowed { }
@@ -423,7 +426,7 @@ public func HAPPlatformBLEPeripheralManagerStartAdvertising(
 public func HAPPlatformBLEPeripheralManagerStopAdvertising(
     blePeripheralManager: HAPPlatformBLEPeripheralManagerRef
 ) {
-    log("Stop Advrertising")
+    log("Stop Advertising")
     HAPGATTController.task {
         $0.peripheral.stop()
     }
